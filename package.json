@@ -1,0 +1,50 @@
+{
+    "name": "ai-tutor-app",
+    "private": true,
+    "version": "0.0.0",
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "tsc && vite build",
+        "lint": "eslint .",
+        "preview": "vite preview"
+    },
+    "dependencies": {
+        "@react-navigation/bottom-tabs": "^7.2.0",
+        "@react-navigation/native": "^7.0.14",
+        "@supabase/supabase-js": "^2.47.10",
+        "@tanstack/react-query": "^5.62.8",
+        "buffer": "^6.0.3",
+        "clsx": "^2.1.1",
+        "lucide-react": "^0.469.0",
+        "lucide-react-native": "^0.469.0",
+        "nativewind": "^4.1.23",
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1",
+        "react-native": "0.76.5",
+        "react-native-reanimated": "^3.16.6",
+        "react-native-safe-area-context": "^5.0.0",
+        "react-native-screens": "^4.4.0",
+        "react-native-svg": "^15.10.1",
+        "react-native-web": "~0.19.13",
+        "tailwind-merge": "^2.6.0",
+        "tailwindcss": "^3.4.17",
+        "zustand": "^5.0.2"
+    },
+    "devDependencies": {
+        "@eslint/js": "^9.17.0",
+        "@types/node": "^25.0.3",
+        "@types/react": "^18.3.18",
+        "@types/react-dom": "^18.3.5",
+        "@vitejs/plugin-react": "^4.3.4",
+        "autoprefixer": "^10.4.20",
+        "eslint": "^9.17.0",
+        "eslint-plugin-react-hooks": "^5.0.0",
+        "eslint-plugin-react-refresh": "^0.4.16",
+        "globals": "^15.14.0",
+        "postcss": "^8.4.49",
+        "typescript": "~5.6.2",
+        "typescript-eslint": "^8.18.2",
+        "vite": "^6.0.5"
+    }
+}
