@@ -12,7 +12,6 @@ import {
   getFolders, createFolder, updateFolder, deleteFolder,
   getSets, createSet, updateSet, deleteSet
 } from '../services/flashcards';
-import { useSubscription } from '../contexts/SubscriptionContext';
 
 import type { Flashcard, FlashcardSet, Folder } from '../types';
 import ConfirmationModal from './ConfirmationModal';
@@ -24,7 +23,7 @@ interface FlashcardsProps {
 type ViewMode = 'library' | 'folder' | 'set-edit' | 'study';
 
 const Flashcards: React.FC<FlashcardsProps> = ({ userId }) => {
-  const { checkLimit } = useSubscription();
+  // Subscription limits removed - unlimited for all users
 
   // --- Global State ---
   const [viewMode, setViewMode] = useState<ViewMode>('library');
@@ -177,8 +176,7 @@ const Flashcards: React.FC<FlashcardsProps> = ({ userId }) => {
         showNotification('Folder updated successfully');
       }
     } else {
-      // Create
-      if (!checkLimit('folders', folders.length)) return;
+      // Create - unlimited folders for all users
 
       const newFolder = await createFolder(userId, folderFormName, folderFormDesc);
       if (newFolder) {
@@ -259,14 +257,22 @@ const Flashcards: React.FC<FlashcardsProps> = ({ userId }) => {
   };
 
   const handleCreateSet = async () => {
-    if (!checkLimit('flashcard_sets', sets.length)) return;
+    console.log('🔧 handleCreateSet called');
+    console.log('📊 Current sets count:', sets.length);
+    console.log('👤 userId:', userId);
+    console.log('📁 activeFolderId:', activeFolderId);
+
+    // No subscription limits - unlimited sets for all users
 
     const newSetData: Partial<FlashcardSet> = {
       title: 'Untitled Set',
       description: '',
       cards: []
     };
+
+    console.log('📦 Creating set with data:', newSetData);
     const newSet = await createSet(userId, newSetData, activeFolderId || undefined);
+    console.log('✨ createSet returned:', newSet);
 
     if (newSet) {
       setSets(prev => [...prev, newSet]);
@@ -281,6 +287,9 @@ const Flashcards: React.FC<FlashcardsProps> = ({ userId }) => {
 
       setActiveSetId(newSet.id);
       setViewMode('set-edit');
+      console.log('✅ Set created successfully, switching to edit view');
+    } else {
+      console.log('❌ createSet returned null');
     }
   };
 
@@ -354,6 +363,27 @@ const Flashcards: React.FC<FlashcardsProps> = ({ userId }) => {
       true,
       'Delete'
     );
+  };
+
+  const handleSaveSet = async () => {
+    if (!activeSetId) return;
+
+    const updatedSet: Partial<FlashcardSet> = {
+      title: editTitle,
+      description: editDesc,
+      cards: editLocalCards
+    };
+
+    const success = await updateSet(activeSetId, updatedSet);
+
+    if (success) {
+      // Update local state
+      setSets(prev => prev.map(s => s.id === activeSetId ? { ...s, ...updatedSet } : s));
+      showNotification('Set saved successfully!');
+      setViewMode(activeFolderId ? 'folder' : 'library');
+    } else {
+      showNotification('Failed to save set');
+    }
   };
 
   // --- Inner Components ---
@@ -651,6 +681,12 @@ const Flashcards: React.FC<FlashcardsProps> = ({ userId }) => {
     if (!activeSet) return null;
 
     const handleSaveSet = async () => {
+      console.log('🔧 handleSaveSet called in SetEditView');
+      console.log('📝 editTitle:', editTitle);
+      console.log('📝 editDesc:', editDesc);
+      console.log('🃏 editLocalCards:', editLocalCards);
+      console.log('🎯 activeSet.id:', activeSet.id);
+
       const updatedSet = { ...activeSet, title: editTitle, description: editDesc, cards: editLocalCards };
 
       const success = await updateSet(activeSet.id, {
@@ -659,10 +695,15 @@ const Flashcards: React.FC<FlashcardsProps> = ({ userId }) => {
         cards: editLocalCards
       });
 
+      console.log('✅ updateSet returned:', success);
+
       if (success) {
         setSets(prev => prev.map(s => s.id === activeSet.id ? updatedSet : s));
         showNotification('Set saved successfully');
         setViewMode(activeFolderId ? 'folder' : 'library');
+      } else {
+        console.log('❌ Failed to save set');
+        showNotification('Failed to save set');
       }
     };
 

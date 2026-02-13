@@ -1,7 +1,6 @@
 import React, { useRef, useState } from 'react';
 import type { UserProfile } from '../types';
 import { Camera, Mail, Lock, Moon, Sun, Save, LogOut, Edit2, Eye, EyeOff, Upload, X, Zap } from 'lucide-react';
-import { useSubscription } from '../contexts/SubscriptionContext';
 
 interface ProfileProps {
   user: UserProfile;
@@ -21,7 +20,6 @@ const PRESET_AVATARS = [
 ];
 
 const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout }) => {
-  const { showUpgradeModal } = useSubscription();
   const [isEditing, setIsEditing] = useState(false);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const [formData, setFormData] = useState<UserProfile>({ ...user });
@@ -117,15 +115,6 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout }) => {
           <div className="flex items-center gap-2 mt-2">
             <span className="bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 px-3 py-1 rounded-full text-xs font-bold border border-indigo-500/20">Level {user.level} Scholar</span>
           </div>
-
-          {user.subscription_tier === 'free' && (
-            <button
-              onClick={showUpgradeModal}
-              className="mt-4 px-6 py-2 bg-gradient-to-r from-amber-400 to-orange-500 text-black dark:text-white text-sm font-bold rounded-full shadow-lg shadow-orange-500/20 hover:scale-105 transition-transform flex items-center gap-2"
-            >
-              <Zap size={16} fill="currentColor" /> Upgrade to Pro
-            </button>
-          )}
           {isEditing && <p className="text-xs text-indigo-500 dark:text-indigo-400 font-medium mt-3 animate-pulse">Tap photo to change</p>}
         </div>
 

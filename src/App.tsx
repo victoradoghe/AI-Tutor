@@ -4,9 +4,8 @@ import Navigation from './components/Navigation';
 import Dashboard from './components/Dashboard';
 import Auth from './components/Auth';
 import LandingPage from './components/LandingPage';
-import { SubscriptionProvider } from './contexts/SubscriptionContext';
 import type { UserProfile } from './types';
-import { getSessionUser, saveUser, updateUserStreak } from './services/storage';
+import { getSessionUser, saveUser, updateUserStreak, saveSession, clearSession } from './services/storage';
 import { getUserProfile, updateUserProfile } from './services/supabase';
 import { supabase } from './services/supabase';
 
@@ -93,11 +92,13 @@ function App() {
     const handleLogin = (loggedInUser: UserProfile) => {
         setUser(loggedInUser);
         saveUser(loggedInUser);
+        saveSession(loggedInUser.email); // Save email to session for flashcard service
         setCurrentTab('dashboard');
     };
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
+        clearSession(); // Clear the session email
         setUser(null);
         setCurrentTab('landing');
     };
@@ -155,26 +156,24 @@ function App() {
     );
 
     return (
-        <SubscriptionProvider user={user} onUpdateUser={handleUpdateUser}>
-            <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 transition-colors duration-150">
-                <Navigation
-                    currentTab={currentTab}
-                    setTab={setCurrentTab}
-                    isMobile={isMobile}
-                    onLogout={handleLogout}
-                />
+        <div className="flex flex-col h-screen bg-gradient-to-br from-slate-50 to-indigo-50 dark:from-slate-900 dark:to-slate-800">
+            <Navigation
+                currentTab={currentTab}
+                setTab={setCurrentTab}
+                isMobile={isMobile}
+                onLogout={handleLogout}
+            />
 
-                <main className={`flex-1 ${isMobile ? 'pb-24' : 'ml-72'} transition-all duration-300`}>
-                    <Suspense fallback={<LoadingFallback />}>
-                        {currentTab === 'dashboard' && <Dashboard user={user} setTab={setCurrentTab} />}
-                        {currentTab === 'tutor' && <Tutor userId={user.id} userEmail={user.email} />}
-                        {currentTab === 'flashcards' && <Flashcard userId={user.id} />}
-                        {currentTab === 'quiz' && <Quiz onQuizComplete={handleQuizComplete} />}
-                        {currentTab === 'profile' && <Profile user={user} onUpdateUser={handleUpdateUser} onLogout={handleLogout} />}
-                    </Suspense>
-                </main>
-            </div>
-        </SubscriptionProvider>
+            <main className={`flex-1 ${isMobile ? 'pb-24' : 'ml-72'} transition-all duration-300 bg-gradient-to-br from-slate-50 to-indigo-50 dark:from-slate-900 dark:to-slate-800`}>
+                <Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div></div>}>
+                    {currentTab === 'dashboard' && user && <Dashboard user={user} setTab={setCurrentTab} />}
+                    {currentTab === 'tutor' && user && <Tutor userId={user.id} userEmail={user.email} />}
+                    {currentTab === 'flashcards' && user && <Flashcard userId={user.id} />}
+                    {currentTab === 'quiz' && user && <Quiz onQuizComplete={handleQuizComplete} />}
+                    {currentTab === 'profile' && user && <Profile user={user} onUpdateUser={handleUpdateUser} onLogout={handleLogout} />}
+                </Suspense>
+            </main>
+        </div>
     );
 }
 

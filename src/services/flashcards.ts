@@ -1,245 +1,214 @@
-import { supabase } from './supabase';
 import type { Folder, FlashcardSet, Flashcard } from '../types';
 
-// Timeout wrapper to prevent hanging queries
-const withTimeout = <T,>(promise: Promise<T>, timeoutMs = 5000): Promise<T> => {
-    return Promise.race([
-        promise,
-        new Promise<T>((_, reject) =>
-            setTimeout(() => reject(new Error('Query timeout')), timeoutMs)
-        )
-    ]);
-};
+// LocalStorage keys
+const FOLDERS_KEY = 'ai_tutor_folders';
+const SETS_KEY = 'ai_tutor_sets';
+
+// Helper to get user-specific data
+const getUserKey = (userId: string, baseKey: string) => `${baseKey}_${userId}`;
+
+// ============= FOLDERS =============
 
 export const getFolders = async (userId: string): Promise<Folder[]> => {
     try {
-        const { data, error } = await withTimeout(
-            supabase
-                .from('folders')
-                .select('*')
-                .eq('user_id', userId)
-                .order('created_at', { ascending: false }),
-            5000
-        );
-
-        if (error) {
-            console.error('Error fetching folders:', error);
-            return [];
-        }
-
-        // Map to frontend type (names match, but ensure case matches)
-        return data.map((f: any) => ({
-            id: f.id,
-            name: f.name,
-            description: f.description,
-            tags: [], // Tags not yet in DB schema, defaulting to empty
-            setIds: [], // Sets will be fetched separately or joined if needed. For now, we might need a join or separate fetch.
-            // Actually, the frontend expects setIds directly on the folder usually? 
-            // Let's check how the frontend uses it. 
-            // Providing basic fields for now.
-            createdAt: new Date(f.created_at).getTime()
-        }));
+        const key = getUserKey(userId, FOLDERS_KEY);
+        const data = localStorage.getItem(key);
+        return data ? JSON.parse(data) : [];
     } catch (err) {
-        console.error('Error or timeout fetching folders:', err);
+        console.error('Error fetching folders:', err);
         return [];
     }
 };
 
 export const createFolder = async (userId: string, name: string, description: string): Promise<Folder | null> => {
-    const { data, error } = await supabase
-        .from('folders')
-        .insert([{ user_id: userId, name, description }])
-        .select()
-        .single();
+    try {
+        const folders = await getFolders(userId);
 
-    if (error) {
-        console.error('Error creating folder:', error);
+        const newFolder: Folder = {
+            id: `folder-${Date.now()}`,
+            name,
+            description,
+            tags: [],
+            setIds: [],
+            createdAt: Date.now()
+        };
+
+        folders.push(newFolder);
+
+        const key = getUserKey(userId, FOLDERS_KEY);
+        localStorage.setItem(key, JSON.stringify(folders));
+
+        return newFolder;
+    } catch (err) {
+        console.error('Error creating folder:', err);
         return null;
     }
-
-    return {
-        id: data.id,
-        name: data.name,
-        description: data.description,
-        tags: [],
-        setIds: [],
-        createdAt: new Date(data.created_at).getTime()
-    };
 };
 
 export const updateFolder = async (folderId: string, updates: Partial<Folder>): Promise<boolean> => {
-    const { error } = await supabase
-        .from('folders')
-        .update({
-            name: updates.name,
-            description: updates.description,
-        })
-        .eq('id', folderId);
+    try {
+        // Get user email from session
+        const sessionEmail = localStorage.getItem('ai_tutor_session');
+        if (!sessionEmail) return false;
 
-    if (error) {
-        console.error('Error updating folder:', error);
+        // Get full user object from email
+        const usersData = localStorage.getItem('ai_tutor_users');
+        if (!usersData) return false;
+
+        const users = JSON.parse(usersData);
+        const user = users[sessionEmail];
+        if (!user) return false;
+
+        const folders = await getFolders(user.id);
+
+        const index = folders.findIndex(f => f.id === folderId);
+        if (index === -1) return false;
+
+        folders[index] = { ...folders[index], ...updates };
+
+        const key = getUserKey(user.id, FOLDERS_KEY);
+        localStorage.setItem(key, JSON.stringify(folders));
+
+        return true;
+    } catch (err) {
+        console.error('Error updating folder:', err);
         return false;
     }
-    return true;
 };
 
 export const deleteFolder = async (folderId: string): Promise<boolean> => {
-    const { error } = await supabase
-        .from('folders')
-        .delete()
-        .eq('id', folderId);
+    try {
+        const sessionUser = localStorage.getItem('ai_tutor_session');
+        if (!sessionUser) return false;
 
-    if (error) {
-        console.error('Error deleting folder:', error);
+        const user = JSON.parse(sessionUser);
+        const folders = await getFolders(user.id);
+
+        const filtered = folders.filter(f => f.id !== folderId);
+
+        const key = getUserKey(user.id, FOLDERS_KEY);
+        localStorage.setItem(key, JSON.stringify(filtered));
+
+        // Also delete all sets in this folder
+        const sets = await getSets(user.id);
+        const filteredSets = sets.filter(s => s.folderId !== folderId);
+        const setsKey = getUserKey(user.id, SETS_KEY);
+        localStorage.setItem(setsKey, JSON.stringify(filteredSets));
+
+        return true;
+    } catch (err) {
+        console.error('Error deleting folder:', err);
         return false;
     }
-    return true;
 };
+
+// ============= SETS =============
 
 export const getSets = async (userId: string): Promise<FlashcardSet[]> => {
     try {
-        // We need to fetch sets AND their cards to match the frontend FlashcardSet interface
-        const { data: sets, error } = await withTimeout(
-            supabase
-                .from('flashcard_sets')
-                .select(`
-          *,
-          flashcards (*)
-        `)
-                .eq('user_id', userId)
-                .order('created_at', { ascending: false }),
-            5000
-        );
-
-        if (error) {
-            console.error('Error fetching sets:', error);
-            return [];
-        }
-
-        return sets.map((set: any) => ({
-            id: set.id,
-            title: set.title,
-            description: set.description,
-            folderId: set.folder_id,
-            cards: set.flashcards.map((c: any) => ({
-                id: c.id,
-                front: c.front,
-                back: c.back,
-                mastered: c.mastered
-            })),
-            createdAt: new Date(set.created_at).getTime()
-        }));
+        const key = getUserKey(userId, SETS_KEY);
+        const data = localStorage.getItem(key);
+        return data ? JSON.parse(data) : [];
     } catch (err) {
-        console.error('Error or timeout fetching sets:', err);
+        console.error('Error fetching sets:', err);
         return [];
     }
 };
 
 export const createSet = async (userId: string, set: Partial<FlashcardSet>, folderId?: string): Promise<FlashcardSet | null> => {
-    // 1. Create the Set
-    const { data: setData, error: setError } = await supabase
-        .from('flashcard_sets')
-        .insert([{
-            user_id: userId,
-            folder_id: folderId || null,
-            title: set.title,
-            description: set.description
-        }])
-        .select()
-        .single();
+    try {
+        const sets = await getSets(userId);
 
-    if (setError || !setData) {
-        console.error('Error creating set:', setError);
+        const newSet: FlashcardSet = {
+            id: `set-${Date.now()}`,
+            title: set.title || 'Untitled Set',
+            description: set.description || '',
+            folderId: folderId || null,
+            cards: set.cards || [],
+            createdAt: Date.now()
+        };
+
+        sets.push(newSet);
+
+        const key = getUserKey(userId, SETS_KEY);
+        localStorage.setItem(key, JSON.stringify(sets));
+
+        return newSet;
+    } catch (err) {
+        console.error('Error creating set:', err);
         return null;
     }
-
-    // 2. Create the Cards if any
-    let createdCards: Flashcard[] = [];
-    if (set.cards && set.cards.length > 0) {
-        const cardsToInsert = set.cards.map(c => ({
-            set_id: setData.id,
-            front: c.front,
-            back: c.back,
-            mastered: c.mastered || false
-        }));
-
-        const { data: cardsData, error: cardsError } = await supabase
-            .from('flashcards')
-            .insert(cardsToInsert)
-            .select();
-
-        if (cardsError) {
-            console.error('Error creating cards:', cardsError);
-            // We continue, returning the set with empty cards or partial success?
-            // For now, let's assume partial success but log error.
-        } else {
-            createdCards = cardsData.map((c: any) => ({
-                id: c.id,
-                front: c.front,
-                back: c.back,
-                mastered: c.mastered
-            }));
-        }
-    }
-
-    return {
-        id: setData.id,
-        title: setData.title,
-        description: setData.description,
-        cards: createdCards,
-        createdAt: new Date(setData.created_at).getTime()
-    };
 };
 
 export const updateSet = async (setId: string, updates: Partial<FlashcardSet>): Promise<boolean> => {
-    // Update Set details
-    const { error } = await supabase
-        .from('flashcard_sets')
-        .update({
-            title: updates.title,
-            description: updates.description
-        })
-        .eq('id', setId);
+    try {
+        console.log('🔧 updateSet called with setId:', setId);
+        console.log('📦 updates:', updates);
 
-    if (error) {
-        console.error('Error updating set:', error);
+        const sessionEmail = localStorage.getItem('ai_tutor_session');
+        console.log('👤 sessionEmail:', sessionEmail ? sessionEmail : 'not found');
+
+        if (!sessionEmail) return false;
+
+        const usersData = localStorage.getItem('ai_tutor_users');
+        if (!usersData) {
+            console.log('❌ No users data found');
+            return false;
+        }
+
+        const users = JSON.parse(usersData);
+        const user = users[sessionEmail];
+        if (!user) {
+            console.log('❌ User not found for email:', sessionEmail);
+            return false;
+        }
+
+        console.log('👤 user.id:', user.id);
+
+        const sets = await getSets(user.id);
+        console.log('📚 Total sets:', sets.length);
+
+        const index = sets.findIndex(s => s.id === setId);
+        console.log('🔍 Set index:', index);
+
+        if (index === -1) return false;
+
+        sets[index] = { ...sets[index], ...updates };
+        console.log('✏️ Updated set:', sets[index]);
+
+        const key = getUserKey(user.id, SETS_KEY);
+        localStorage.setItem(key, JSON.stringify(sets));
+        console.log('💾 Saved to localStorage with key:', key);
+
+        return true;
+    } catch (err) {
+        console.error('Error updating set:', err);
         return false;
     }
-
-    // Update Cards logic is complex (add/remove/update). 
-    // For simplicity MVP: If cards are provided, we might wipe and recreate or handle intelligent diff.
-    // For now, let's assume this function only updates metadata if cards aren't passed, 
-    // or simple replacement if they are.
-    // If cards ARE passed, we'll delete old ones and insert new ones for this MVP.
-    if (updates.cards) {
-        // 1. Delete existing cards
-        await supabase.from('flashcards').delete().eq('set_id', setId);
-
-        // 2. Insert new cards
-        const cardsToInsert = updates.cards.map(c => ({
-            set_id: setId,
-            front: c.front,
-            back: c.back,
-            mastered: c.mastered || false
-        }));
-
-        if (cardsToInsert.length > 0) {
-            await supabase.from('flashcards').insert(cardsToInsert);
-        }
-    }
-
-    return true;
 };
 
 export const deleteSet = async (setId: string): Promise<boolean> => {
-    const { error } = await supabase
-        .from('flashcard_sets')
-        .delete()
-        .eq('id', setId);
+    try {
+        const sessionEmail = localStorage.getItem('ai_tutor_session');
+        if (!sessionEmail) return false;
 
-    if (error) {
-        console.error('Error deleting set:', error);
+        const usersData = localStorage.getItem('ai_tutor_users');
+        if (!usersData) return false;
+
+        const users = JSON.parse(usersData);
+        const user = users[sessionEmail];
+        if (!user) return false;
+
+        const sets = await getSets(user.id);
+
+        const updatedSets = sets.filter(s => s.id !== setId);
+
+        const key = getUserKey(user.id, SETS_KEY);
+        localStorage.setItem(key, JSON.stringify(updatedSets));
+
+        return true;
+    } catch (err) {
+        console.error('Error deleting set:', err);
         return false;
     }
-    return true;
 };

@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User as UserIcon, Loader2, Volume2, Copy, Check, Plus, MessageSquare, Trash2, Menu, X } from 'lucide-react';
 import { generateTutorResponse } from '../services/geminiService';
 import { getChatSessions, saveChatSession, deleteChatSession } from '../services/storage';
-import { useSubscription } from '../contexts/SubscriptionContext';
 import type { Message, ChatSession } from '../types';
 
 interface TutorProps {
@@ -11,7 +10,7 @@ interface TutorProps {
 }
 
 const Tutor: React.FC<TutorProps> = ({ userEmail }) => {
-  const { checkLimit, incrementMessageCount, remainingMessages, isPro, showUpgradeModal } = useSubscription();
+  // Subscription removed - unlimited messages for all users
   const [messages, setMessages] = useState<Message[]>([]);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
@@ -318,17 +317,7 @@ const Tutor: React.FC<TutorProps> = ({ userEmail }) => {
             </div>
             <span className="font-bold text-slate-900 dark:text-white text-lg">AI Tutor</span>
 
-            {/* Free Tier Badge */}
-            {!isPro && (
-              <div className="ml-4 px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full border border-slate-200 dark:border-white/10 flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                  {remainingMessages} left
-                </span>
-                <button onClick={showUpgradeModal} className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
-                  Upgrade
-                </button>
-              </div>
-            )}
+            {/* Subscription UI removed */}
           </div>
         </div>
 

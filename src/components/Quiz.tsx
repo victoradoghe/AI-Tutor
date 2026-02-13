@@ -2,15 +2,13 @@ import type React from 'react';
 import { useState } from 'react';
 import { generateQuiz } from '../services/geminiService';
 import type { QuizQuestion } from '../types';
-import { Brain, CheckCircle2, XCircle, Trophy, RefreshCw, ChevronRight, Loader2, Lock } from 'lucide-react';
-import { useSubscription } from '../contexts/SubscriptionContext';
+import { Brain, CheckCircle2, XCircle, Trophy, RefreshCw, ChevronRight, Loader2 } from 'lucide-react';
 
 interface QuizProps {
   onQuizComplete: (score: number, total: number) => void;
 }
 
 const Quiz: React.FC<QuizProps> = ({ onQuizComplete }) => {
-  const { showUpgradeModal } = useSubscription();
   const [topic, setTopic] = useState('');
   const [difficulty, setDifficulty] = useState('Beginner');
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
@@ -148,22 +146,6 @@ const Quiz: React.FC<QuizProps> = ({ onQuizComplete }) => {
                       <div className="font-bold">Standard Quiz</div>
                       <div className="text-xs text-slate-500 dark:text-slate-400">Multiple Choice Questions</div>
                     </div>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => showUpgradeModal()}
-                  className="flex items-center justify-between p-4 rounded-xl bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors group relative"
-                >
-                  <div className="flex items-center gap-3 opacity-50">
-                    <div className="w-5 h-5 rounded-full border-2 border-slate-400" />
-                    <div className="text-left">
-                      <div className="font-bold">Deep Dive</div>
-                      <div className="text-xs">Written Answers & Detailed Feedback</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-indigo-500 font-bold text-sm bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1 rounded-full">
-                    <Lock size={14} /> PRO
                   </div>
                 </button>
               </div>
