@@ -69,17 +69,14 @@ function App() {
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    // Update streak on app open
     useEffect(() => {
         if (user) {
             const updatedUser = updateUserStreak(user);
-            // Update if streak changed OR if lastActiveDate changed
-            if (updatedUser.streak !== user.streak || updatedUser.lastActiveDate !== user.lastActiveDate) {
+            if (updatedUser.streak !== user.streak) {
                 handleUpdateUser(updatedUser);
             }
         }
-        // Run on mount and whenever user object changes
-    }, [user?.id, user?.lastActiveDate]);
+    }, [user?.id]);
 
     // Apply theme to HTML element
     useEffect(() => {
@@ -118,6 +115,24 @@ function App() {
         }
     };
 
+    const handleQuizComplete = (score: number, total: number) => {
+        if (!user) return;
+
+        const xpGained = score * 10;
+        // Simple level logic: Level 1 -> 0-999 XP, Level 2 -> 1000-1999 XP, etc.
+        const newLevel = Math.floor(((user.xp || 0) + xpGained) / 1000) + 1;
+
+        const updatedUser: UserProfile = {
+            ...user,
+            quizTotalQuestions: (user.quizTotalQuestions || 0) + total,
+            quizTotalCorrect: (user.quizTotalCorrect || 0) + score,
+            xp: (user.xp || 0) + xpGained,
+            level: newLevel > user.level ? newLevel : user.level
+        };
+
+        handleUpdateUser(updatedUser);
+    };
+
     // Landing page
     if (currentTab === 'landing' && !user) {
         return <LandingPage onGetStarted={() => setCurrentTab('auth')} />;
@@ -153,17 +168,9 @@ function App() {
                     <Suspense fallback={<LoadingFallback />}>
                         {currentTab === 'dashboard' && <Dashboard user={user} setTab={setCurrentTab} />}
                         {currentTab === 'tutor' && <Tutor userId={user.id} userEmail={user.email} />}
-                        {currentTab === 'flashcards' && <Flashcard userId={user.id} onUpdateUser={handleUpdateUser} />}
-                        {currentTab === 'quiz' && <Quiz onQuizComplete={async (score, total) => {
-                            const newStats = {
-                                ...user,
-                                quizTotalQuestions: user.quizTotalQuestions + total,
-                                quizTotalCorrect: user.quizTotalCorrect + score,
-                                xp: user.xp + (score * 10) + 5 // 10 XP per correct answer + 5 base XP
-                            };
-                            await handleUpdateUser(newStats);
-                        }} />}
-                        {currentTab === 'profile' && <Profile user={user} onUpdateUser={handleUpdateUser} />}
+                        {currentTab === 'flashcards' && <Flashcard userId={user.id} />}
+                        {currentTab === 'quiz' && <Quiz onQuizComplete={handleQuizComplete} />}
+                        {currentTab === 'profile' && <Profile user={user} onUpdateUser={handleUpdateUser} onLogout={handleLogout} />}
                     </Suspense>
                 </main>
             </div>

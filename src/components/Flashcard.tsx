@@ -175,7 +175,6 @@ const Flashcards: React.FC<FlashcardsProps> = ({ userId }) => {
           tags: folderFormTags // Tags not persisted to DB yet in this version
         } : f));
         showNotification('Folder updated successfully');
-        setIsFolderModalOpen(false); // Close modal after edit
       }
     } else {
       // Create

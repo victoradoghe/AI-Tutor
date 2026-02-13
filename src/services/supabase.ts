@@ -18,43 +18,56 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
  * Helper to fetch a complete user profile from the 'profiles' table.
  */
 export async function getUserProfile(userId: string): Promise<UserProfile | null> {
-    const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+    try {
+        // Create timeout promise
+        const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+        );
 
-    if (error) {
-        console.error('Error fetching profile:', error);
+        // Create fetch promise
+        const fetchPromise = supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .single();
+
+        const { data: profile, error } = await Promise.race([fetchPromise, timeoutPromise]);
+
+        if (error) {
+            console.error('Error fetching profile:', error);
+            return null;
+        }
+
+        // Map DB (snake_case) to Frontend (camelCase)
+        // Note: 'theme' and 'email' match both, but others need mapping
+        const userProfile: UserProfile = {
+            id: profile.id, // CRITICAL FIX: Include ID mapping
+            firstName: profile.first_name || '',
+            lastName: profile.last_name || '',
+            name: profile.name || `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),
+            email: profile.email || '',
+            avatar: profile.avatar || '',
+            level: profile.level || 1,
+            xp: profile.xp || 0,
+            streak: profile.streak || 1,
+            lastActiveDate: profile.last_active_date || new Date().toDateString(),
+            learningStyle: profile.learning_style || 'Visual',
+            interests: profile.interests || [],
+            theme: getThemePreference() || profile.theme || 'light',
+            subscription_tier: profile.subscription_tier || 'free',
+            subscription_status: profile.subscription_status || 'active',
+            lessonsCompleted: profile.lessons_completed || 0,
+            quizTotalQuestions: profile.quiz_total_questions || 0,
+            quizTotalCorrect: profile.quiz_total_correct || 0,
+            usage: profile.usage || { daily_messages: 0, last_reset_date: new Date().toDateString() },
+            password: '', // Not stored in profile
+        };
+
+        return userProfile;
+    } catch (err) {
+        console.error('Error or timeout fetching profile:', err);
         return null;
     }
-
-    // Map DB (snake_case) to Frontend (camelCase)
-    // Note: 'theme' and 'email' match both, but others need mapping
-    const userProfile: UserProfile = {
-        id: profile.id, // CRITICAL FIX: Include ID mapping
-        firstName: profile.first_name || '',
-        lastName: profile.last_name || '',
-        name: profile.name || `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),
-        email: profile.email || '',
-        avatar: profile.avatar || '',
-        level: profile.level || 1,
-        xp: profile.xp || 0,
-        streak: profile.streak || 1,
-        lastActiveDate: profile.last_active_date || new Date().toDateString(),
-        learningStyle: profile.learning_style || 'Visual',
-        interests: profile.interests || [],
-        theme: getThemePreference() || profile.theme || 'light',
-        subscription_tier: profile.subscription_tier || 'free',
-        subscription_status: profile.subscription_status || 'active',
-        lessonsCompleted: profile.lessons_completed || 0,
-        quizTotalQuestions: profile.quiz_total_questions || 0,
-        quizTotalCorrect: profile.quiz_total_correct || 0,
-        usage: profile.usage || { daily_messages: 0, last_reset_date: new Date().toDateString() },
-        password: '', // Not stored in profile
-    };
-
-    return userProfile;
 }
 
 /**

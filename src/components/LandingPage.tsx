@@ -34,7 +34,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
             {/* Hero Section */}
             <div className="relative z-10 container mx-auto px-6 pt-20 pb-32 md:pt-32 text-center">
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-sm font-medium mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                    <Sparkles size={16} />
                     <span>The Future of Learning is Here</span>
                 </div>
 
@@ -58,9 +57,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                         Get Started For Free
                         <ArrowRight className="group-hover:translate-x-1 transition-transform" size={20} />
                     </button>
-                    <button className="px-8 py-4 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 rounded-2xl font-bold text-lg transition-all flex items-center gap-2 backdrop-blur-sm">
+                    {/* <button className="px-8 py-4 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 rounded-2xl font-bold text-lg transition-all flex items-center gap-2 backdrop-blur-sm">
                         Watch Demo
-                    </button>
+                    </button> */}
                 </div>
             </div>
 

@@ -43,20 +43,20 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ user
 
         switch (feature) {
             case 'flashcard_sets':
-                // Free limit disabled for now
-                // if (currentCount >= 3) {
-                //     setModalContent({ title: "Flashcard Sets Limit Reached", description: "Free users can only create 3 flashcard sets. Upgrade to create unlimited sets." });
-                //     setIsModalOpen(true);
-                //     return false;
-                // }
+                // Free limit: 3 sets
+                if (currentCount >= 3) {
+                    setModalContent({ title: "Flashcard Sets Limit Reached", description: "Free users can only create 3 flashcard sets. Upgrade to create unlimited sets." });
+                    setIsModalOpen(true);
+                    return false;
+                }
                 return true;
             case 'folders':
-                // Free limit disabled for now
-                // if (currentCount >= 2) {
-                //     setModalContent({ title: "Folder Limit Reached", description: "Upgrade to Pro to create more folders and organize your content better." });
-                //     setIsModalOpen(true);
-                //     return false;
-                // }
+                // Free limit: 2 folders
+                if (currentCount >= 2) {
+                    setModalContent({ title: "Folder Limit Reached", description: "Upgrade to Pro to create more folders and organize your content better." });
+                    setIsModalOpen(true);
+                    return false;
+                }
                 return true;
             case 'daily_messages':
                 // Free limit: 10 messages
