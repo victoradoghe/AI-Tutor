@@ -2,17 +2,15 @@ import type { Flashcard, QuizQuestion } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
-import { canSendMessage, getSessionUser } from './storage';
+
 
 export const generateTutorResponse = async (
   history: { role: string; parts: { text: string }[] }[],
   userMessage: string
 ): Promise<string> => {
-  // Client-Side Gatekeeper
-  const user = getSessionUser();
-  if (user && !canSendMessage(user)) {
-    return "You have reached your daily message limit. Upgrade to Pro to continue chatting!";
-  }
+  // Subscription check removed - unlimited messages
+  // Subscription check removed - unlimited messages
+
 
   try {
     const response = await fetch(`${API_URL}/chat`, {

@@ -116,9 +116,9 @@ const Tutor: React.FC<TutorProps> = ({ userEmail }) => {
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
-    // Check Subscription Limit
-    const canSend = checkLimit('daily_messages');
-    if (!canSend) return;
+    // Subscription removed - unlimited messages
+    // const canSend = checkLimit('daily_messages');
+    // if (!canSend) return;
 
     const userMsg: Message = {
       id: Date.now().toString(),
@@ -132,8 +132,8 @@ const Tutor: React.FC<TutorProps> = ({ userEmail }) => {
     setIsLoading(true);
 
     try {
-      // Increment usage in background (don't block chat)
-      incrementMessageCount().catch(err => console.error("Failed to increment usage:", err));
+      // Increment usage removed
+      // incrementMessageCount().catch(err => console.error("Failed to increment usage:", err));
 
       const history = messages.map(m => ({
         role: m.role,
