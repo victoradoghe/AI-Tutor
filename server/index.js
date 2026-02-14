@@ -195,8 +195,14 @@ app.post('/api/quiz', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT} (Cerebras - Model: ${MODEL_NAME})`);
-  console.log("Health check: Server is staying alive...");
-  console.log("API Key loaded successfully.");
-});
+// Export for Vercel
+export default app;
+
+// Only listen if running locally (not in Vercel)
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT} (Cerebras - Model: ${MODEL_NAME})`);
+    console.log("Health check: Server is staying alive...");
+    console.log("API Key loaded successfully.");
+  });
+}
